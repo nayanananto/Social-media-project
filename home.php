@@ -1,6 +1,19 @@
 <?php
 session_start();
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>
+
+
 
 <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
@@ -15,9 +28,10 @@ session_start();
 
 <!------ BODY ---------->
 <div class="container">
-    <?php
-        
-    ?>
+<?php
+        $current_user = $_SESSION['USERNAME'];
+?>
+    
 
     <div class="row">
       <div class="col-lg-4 offset-lg-1 order-lg-2">
@@ -26,7 +40,7 @@ session_start();
             <!--<div ><img  src="https://i.ibb.co/L6ht5pP/people-3.jpg" alt="avatar"></div>-->
             <div><img  src="https://i.ibb.co/L6ht5pP/people-3.jpg" height="150" width="150"></div>
             <div class="text-center mt-3">
-              <h2 class="h5">Jane Doe</h2>
+              <h2 class="h5"><?php echo $current_user ?></h2>
               <p class="small text-muted">@janedoe</p>
             </div>
           </div>
@@ -64,11 +78,11 @@ session_start();
         <br>
         <div>
             <form id="postform" autocomplete="off" action = 'home.php' method ='post'>
-                <textarea name="titlearea" rows="2" cols="50" placeholder="write something here" required></textarea>
+                <textarea name="titlearea" rows="2" cols="50" placeholder="write title here" required></textarea>
                 <br>
                 <textarea name="postarea" rows="5" cols="50" placeholder="write something here" required></textarea>
                 <br>
-                <input type ='submit' name = 'login'></input>
+                <input type ='submit' name = 'login' value = 'Create post'></input>
             </form>
         </div>
         <?php
@@ -76,11 +90,8 @@ session_start();
                 #sql codes give error in this function
             }
         ?>
-        
-       
 
-
-
+   
         <?php
 $_SESSION['mypost'] = null;
 $_SESSION['mytitle'] = null;
@@ -104,7 +115,7 @@ if($post_string != null) {
     $title_string_escaped = mysqli_real_escape_string($conn, $title_string);
 
    
-    $sql = "INSERT INTO post_manage (username,post_content,post_title,vote) VALUES ('KEN','$post_string_escaped','$title_string_escaped',0)";
+    $sql = "INSERT INTO post_manage (username,post_content,post_title,vote) VALUES ('$current_user','$post_string_escaped','$title_string_escaped',0)";
     if(mysqli_query($conn, $sql)) {
         echo 'Post created';
     } else {
@@ -122,14 +133,15 @@ if($post_string != null) {
         $sql = "SELECT * FROM post_manage";
         $result = mysqli_query($conn, $sql);
         $arr =array();
+
         if(mysqli_num_rows($result) > 0){ 
             while($row = mysqli_fetch_assoc($result)){
-                array_push ($arr , array($row['username'],$row['post_content'],$row['post_title']));
+                array_push ($arr , array($row['username'],$row['post_content'],$row['post_title'],$row['post_id']));
             } 
         }
         mysqli_close( $conn );
         
-
+        #arr =[[name1,post_content1,post_title1],[name1,post_content1,post_title1]....]
         ?>
 
 
@@ -149,7 +161,24 @@ if($post_string != null) {
             </div>
           </div>
         </section>
--->
+        
+        
+--> 
+
+<script>
+      function delete_post(post_num){
+        
+        <?php
+          #include('database.php');
+          #$sql ="DELETE FROM post_manage WHERE post_id = '$val'";
+          #$result = $conn->query($sql);
+        ?>
+      }
+    </script>
+  
+  
+
+
         <section class="py-4">
           <h1 class="h3">Feed</h1>
 
@@ -158,7 +187,7 @@ if($post_string != null) {
             <div class="d-flex justify-content-between align-items-center">
               <div class="d-flex flex-row align-items-center">
                 
-                <div><img  src="https://i.ibb.co/vqNVTz1/people-2.jpg" width="100px" height="100px"></div>
+                <div><img  src="https://i.ibb.co/L6ht5pP/people-3.jpg" width="70px" height="70px" alt="Avatar" style="border-radius: 50%;"></div>
                 <div>
                   <h2 class="h6 mb-0"> <?php print_r($arr[$i][0])?></h2>
                   <p class="small text-muted mb-0">15 min ago</p>
@@ -167,10 +196,17 @@ if($post_string != null) {
               <button class="btn btn-icon btn-text-dark dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                   <i data-feather="more-vertical"></i>
               </button>
+
               <ul class="dropdown-menu dropdown-menu-right">
                 <li><a class="dropdown-item" href="#">Save</a></li>
-                <li><a class="dropdown-item" href="#">Unsubscribe</a></li>
+                <?php if ($current_user == $arr[$i][0]){ ?>
+                  <script>
+                    let num = <?php echo $arr[$i][3] ?>;
+                  </script>
+                  <li><a class="dropdown-item" href = "delete data.php?num= <?php echo $arr[$i][3] ?>"> Delete</a></li>
+                <?php }?>
               </ul>
+
             </div><img class="rounded w-100 mt-3" src="https://i.ibb.co/RChWN81/fruits-rose.jpg" alt="feed">
             <div class="mt-3">
               <h4 class="h5"><?php print_r($arr[$i][2])?></h4>
