@@ -1,17 +1,9 @@
 <?php
 session_start();
+$current_user = $_SESSION['USERNAME'];
+$current_user_type = $_SESSION['type'];
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
 
-</body>
-</html>
 
 
 
@@ -23,14 +15,11 @@ session_start();
 <!------ HEAD ---------->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;800;900&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-
-
+<link rel="stylesheet" href="styler.css">
 
 <!------ BODY ---------->
 <div class="container">
-<?php
-        $current_user = $_SESSION['USERNAME'];
-?>
+
     
 
     <div class="row">
@@ -40,7 +29,7 @@ session_start();
             <!--<div ><img  src="https://i.ibb.co/L6ht5pP/people-3.jpg" alt="avatar"></div>-->
             <div><img  src="https://i.ibb.co/L6ht5pP/people-3.jpg" height="150" width="150"></div>
             <div class="text-center mt-3">
-              <h2 class="h5"><?php echo $current_user ?></h2>
+              <h2 class="h5"><?php echo $current_user?></h2>
               <p class="small text-muted">@janedoe</p>
             </div>
           </div>
@@ -70,33 +59,45 @@ session_start();
           <div class="input-group input-group-lg"><span class="input-group-text bg-light border-0" id="search-icon">
                 <i data-feather="search"></i></span>
             <input class="form-control bg-light border-0" type="text" placeholder="Search" aria-label="Search" aria-describedby="search-icon">
-          </div>
+            <a onClick="window.close();" style="text-decoration: none;" href="view-accepted.php?cuser=<?php echo $current_user?>"><i class="mr-1" data-feather="bell" style="margin-top: 10px; margin-left: 10px;" ></i></a>
+            </div>
         </div>
         
         
-        <!---<button onclick="createPost()">Create post</button>-->
+       
         <br>
+        
         <div>
             <form id="postform" autocomplete="off" action = 'home.php' method ='post'>
                 <textarea name="titlearea" rows="2" cols="50" placeholder="write title here" required></textarea>
                 <br>
                 <textarea name="postarea" rows="5" cols="50" placeholder="write something here" required></textarea>
                 <br>
-                <input type ='submit' name = 'login' value = 'Create post'></input>
+                <div>
+                  <input type ='submit' name = 'login' value = 'Create post'></input>
+                </div>
             </form>
         </div>
-        <?php
-            function post_insert_sql($data){
-                #sql codes give error in this function
-            }
-        ?>
-
-   
+        <div>
+        <script>
+          var checked = false;
+          function uncheck1(){
+              if(checked) {
+                  let x = document.getElementById("radiobtn1").checked = false;
+                  checked = false;
+                  return;
+              }
+              checked = true;
+              document.write(x);
+          }
+          
+        </script>
+        <input onclick="uncheck1()" id="radiobtn1" name="radiobtn1" type="radio" value="prashant">prashant</input>
+        
         <?php
 $_SESSION['mypost'] = null;
 $_SESSION['mytitle'] = null;
-if(isset($_POST["login"])) {
-    
+if(isset($_POST["login"])) { # when create post button clicked, these happens:
     $_SESSION['mypost'] = $_POST['postarea'];
     $_SESSION['mytitle'] = $_POST['titlearea'];
     $post_string = $_SESSION['mypost'];
@@ -104,6 +105,7 @@ if(isset($_POST["login"])) {
     
 if($post_string != null) {
     
+    $is_public = "<script>document.write(666)</script>";
     $conn = mysqli_connect("localhost", "root", "", "social_database");
 
     if(!$conn) {
@@ -114,14 +116,21 @@ if($post_string != null) {
     $post_string_escaped = mysqli_real_escape_string($conn, $post_string);
     $title_string_escaped = mysqli_real_escape_string($conn, $title_string);
 
-   
-    $sql = "INSERT INTO post_manage (username,post_content,post_title,vote) VALUES ('$current_user','$post_string_escaped','$title_string_escaped',0)";
+
+
+     
+    
+    $sql = "INSERT INTO post_manage(username,post_content,post_title,vote,isPublic) VALUES ('$current_user','$post_string_escaped','$title_string_escaped',0,'$is_public')";
     if(mysqli_query($conn, $sql)) {
-        echo 'Post created';
+        
     } else {
         echo 'Error: ' . mysqli_error($conn);
     }
+
+    
+
     mysqli_close($conn);
+   
     
     header("location: home.php");
 }
@@ -129,19 +138,19 @@ if($post_string != null) {
 ?>
  <?php
         include("database.php");
-        #code to show all the post_content+title+poster from db
+        #code to get all the post_content+title+poster from db
         $sql = "SELECT * FROM post_manage";
         $result = mysqli_query($conn, $sql);
         $arr =array();
 
         if(mysqli_num_rows($result) > 0){ 
             while($row = mysqli_fetch_assoc($result)){
-                array_push ($arr , array($row['username'],$row['post_content'],$row['post_title'],$row['post_id']));
+                array_push ($arr , array($row['username'],$row['post_content'],$row['post_title'],$row['post_id'],$row['isPublic']));
             } 
         }
         mysqli_close( $conn );
         
-        #arr =[[name1,post_content1,post_title1],[name1,post_content1,post_title1]....]
+        # arr =[[name1,post_content1,post_title1],[name1,post_content1,post_title1]....]
         ?>
 
 
@@ -164,17 +173,23 @@ if($post_string != null) {
         
         
 --> 
-
-<script>
-      function delete_post(post_num){
-        
-        <?php
-          #include('database.php');
-          #$sql ="DELETE FROM post_manage WHERE post_id = '$val'";
-          #$result = $conn->query($sql);
-        ?>
-      }
-    </script>
+<?php
+    function checkAccepted($current_user,$postID){
+      include('database.php');
+      $sql = "SELECT * FROM post_status";
+      $result = $conn->query($sql);
+      $isAccepted=false;
+      if(mysqli_num_rows($result) > 0){ 
+        while($row = mysqli_fetch_assoc($result)){
+          if($row['username'] == $current_user && $row['post_id']==$postID){
+            $isAccepted=true;
+          }
+        } 
+    }
+    mysqli_close($conn);
+    return $isAccepted;
+    }
+?>
   
   
 
@@ -183,6 +198,8 @@ if($post_string != null) {
           <h1 class="h3">Feed</h1>
 
           <?php for ($i = 0; $i < count($arr); $i++) { ?>
+          <!-- show all the posts from database on feed (upto line 259)-->
+            
           <div class="mb-4 py-4">
             <div class="d-flex justify-content-between align-items-center">
               <div class="d-flex flex-row align-items-center">
@@ -200,9 +217,7 @@ if($post_string != null) {
               <ul class="dropdown-menu dropdown-menu-right">
                 <li><a class="dropdown-item" href="#">Save</a></li>
                 <?php if ($current_user == $arr[$i][0]){ ?>
-                  <script>
-                    let num = <?php echo $arr[$i][3] ?>;
-                  </script>
+                  
                   <li><a class="dropdown-item" href = "delete data.php?num= <?php echo $arr[$i][3] ?>"> Delete</a></li>
                 <?php }?>
               </ul>
@@ -216,12 +231,26 @@ if($post_string != null) {
               <button class="btn btn-text-dark d-flex align-items-center px-1" type="button">
                   <i class="mr-1" data-feather="heart"></i>432
               </button>
-              <button class="btn btn-icon btn-text-dark" type="button">
-                  <i data-feather="share-2"></i>
+              
+                <?php if ($current_user_type == 'Y' && $arr[$i][0]!=$current_user){?>
+                  <?php 
+                      $button_text="ACCEPT";
+                      $col = 'green';
+                      $isAlreadyAccepted = checkAccepted($current_user,$arr[$i][3]);
+                      if ($isAlreadyAccepted){
+                        $button_text = "DECLINE";
+                        $col='red';
+                      }
+                  ?>
+                  
+                  <button class="btn success"><a class="dropdown-item" href="show-accepted.php?pid=<?php echo $arr[$i][3]; ?>&acceptor=<?php echo $current_user; ?>"style="color: <?php echo $col?>; text-decoration: none;"><?php echo $button_text ?></a></button>
+                  <?php }?>
               </button>
             </div>
           </div>
           <?php } ?>
+
+
        <!--   <div>Take a look at <a href="https://bootstrap-minui.github.io/" target="_blank" rel="noopener noreferrer">Minui</a> for more clean and minimal templates built with Bootstrap</div>--->
         </section>
       </div>
